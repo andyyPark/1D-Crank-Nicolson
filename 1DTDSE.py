@@ -3,6 +3,7 @@ import scipy.sparse
 import scipy.sparse.linalg
 from scipy.integrate import trapz
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 
 class Schrodinger(object):
 
@@ -16,16 +17,19 @@ class Schrodinger(object):
         self.averageX2 = np.zeros(self.T)
 
     def plot_graphs(self):
-        plt.figure(figsize=(10, 7))
-        plt.subplot(1, 3, 1)
-        plt.plot(self.t, self.normalization)
-        plt.title('Normalization')
-        plt.subplot(1, 3, 2)
-        plt.plot(self.t, self.averageX)
-        plt.title('Average x')
-        plt.subplot(1, 3, 3)
-        plt.plot(self.t, self.averageX2)
-        plt.title('Average x^2')
+        fig, ax = plt.subplots(1, 3, figsize=(11, 7))
+        ax[0].set_ylim(0, 1.2)
+        ax[0].plot(self.t, self.normalization)
+        ax[0].set_title('Normalization')
+        ax[1].set_ylim(-(1.5 + self.xa), 1.5 + self.xa)
+        ax[1].plot(self.t, self.averageX)
+        ax[1].set_title('Average x')
+        ax[2].plot(self.t, self.averageX2)
+        ax[2].set_title('Average x^2')
+        fig.savefig('figure', dpi=None, facecolor='w', edgecolor='w',
+        orientation='portrait', papertype=None, format=None,
+        transparent=False, bbox_inches=None, pad_inches=0.1,
+        frameon=None, metadata=None)
         plt.show()
 
     def play_video(self, PSI):
@@ -45,14 +49,14 @@ class Schrodinger(object):
         ax2.fill_between(self.x, self.V, facecolor = 'C1', alpha =0.2)
         ax1.grid('on')
         plt.draw()
-        for n in range(0, self.T - 1):
+        for n in range(0, self.n):
             line.set_ydata(abs(PSI[:, n]) ** 2)
             plt.pause(0.0001)
             plt.draw()
         plt.ioff()
         plt.show()
 
-    def solve(self):
+    def solve(self, threshold):
         U1, U2 = self.sparse_matrix()
         LU = scipy.sparse.linalg.splu(U1)
         PSI = np.zeros((self.J, self.T), dtype=complex)
@@ -65,7 +69,17 @@ class Schrodinger(object):
             self.normalization[n] = trapz(abs(psi ** 2), self.x, dx=self.dx)
             self.averageX[n] = trapz(self.x * abs(psi ** 2), self.x, dx=self.dx)
             self.averageX2[n] = trapz(self.x ** 2 * abs(psi ** 2), self.x, dx=self.dx)
+            if abs(self.averageX[n] - self.xa) > threshold:
+                self.n = n
+                self.clear_data()
+                break  
         return PSI
+
+    def clear_data(self):
+        self.t = self.t[: self.n]
+        self.normalization = self.normalization[: self.n]
+        self.averageX = self.averageX[: self.n]
+        self.averageX2 = self.averageX2[: self.n]
 
     def sparse_matrix(self):
         b = 1 + 1j * self.dt * self.hbar ** 2 / (2 * self.hbar \
@@ -84,7 +98,7 @@ class Schrodinger(object):
             , scipy.sparse.spdiags(U2, diags, self.J, self.J).tocsc())
 
     def set_potential(self):
-        self.V = Potential(self.x, self.V0, self.a, self.vp, self.d)
+        self.V = Potential(self.x, self.V0, self.a, self.vp)
         if self.potential_type == 'smooth_gaussian':
             self.V = self.V.smooth_gaussian()
         elif self.potential_type == 'delta':
@@ -134,6 +148,7 @@ class Potential:
         self.d = d
 
     def zero_potential(self):
+        self.V0 = 0
         return np.zeros(len(self.x))
 
     def delta_potential(self):
@@ -156,19 +171,19 @@ args = {'nx': 1000,
         'xf': 50, 
         'xa': 4, 
         't0': 0, 
-        'tf': 6.0,
+        'tf': 7.0,
         'dt': 0.005, 
         'a': 0.4, 
         'k0x': 0,
         'mass': 0.5,
         'hbar': 1,
-        'potential': 'smooth_gaussian',
+        'potential': '',
         'V0': 50,
         'vp': 10,
         }
 
 schrodinger = Schrodinger(**args)
-psi = schrodinger.solve()
-schrodinger.play_video(psi)
+psi = schrodinger.solve(threshold=0.0005)
+#schrodinger.play_video(psi)
 schrodinger.plot_graphs()
 
