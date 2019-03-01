@@ -10,12 +10,13 @@ class Schrodinger(object):
         self.set_constants(kwargs)
         self.set_coordinate(kwargs)
         self.psi0 = self.wavepacket(self.x, self.xa, self.k0x, self.a)
-        self.V = self.potential(self.x, kwargs['potential'])
+        self.set_potential()
         self.normalization = np.zeros(self.T)
         self.averageX = np.zeros(self.T)
         self.averageX2 = np.zeros(self.T)
 
     def plot_graphs(self):
+        plt.figure(figsize=(10, 7))
         plt.subplot(1, 3, 1)
         plt.plot(self.t, self.normalization)
         plt.title('Normalization')
@@ -41,7 +42,7 @@ class Schrodinger(object):
         ax2.set_xlim(self.x0, self.xf)
         ax2.set_ylim(0, 1.5 * self.V0)
         ax2.set_ylabel('$V$')
-        ax2.fill_between(self.x,self.V,facecolor = 'C1',alpha =0.2)
+        ax2.fill_between(self.x, self.V, facecolor = 'C1', alpha =0.2)
         ax1.grid('on')
         plt.draw()
         for n in range(0, self.T - 1):
@@ -82,36 +83,22 @@ class Schrodinger(object):
         return (scipy.sparse.spdiags(U1, diags, self.J, self.J).tocsc()\
             , scipy.sparse.spdiags(U2, diags, self.J, self.J).tocsc())
 
+    def set_potential(self):
+        self.V = Potential(self.x, self.V0, self.a, self.vp, self.d)
+        if self.potential_type == 'smooth_gaussian':
+            self.V = self.V.smooth_gaussian()
+        elif self.potential_type == 'delta':
+            self.V = self.V.delta_potential()
+        elif self.potential_type == 'square':
+            self.V = self.V.square_potential()
+        else:
+            self.V = self.V.zero_potential()
+
     def wavepacket(self, x, xa, k0x, a):
         f   = (1. / (np.pi * a ** 2)) ** 0.25
         e1  = np.exp(-((x - xa) ** 2.) / (2. * a ** 2))
         e2  = np.exp(1j * k0x * x)
         return f * e1 * e2
-
-    def potential(self, x, U):
-        def no_potential(x):
-            return np.zeros(len(x))
-
-        def delta_potential(x):
-            V = np.zeros(len(x))
-            V[int(len(x) / 2)] = 1
-            return V
-
-        def square_potential(x):
-            return x ** 2 / 100
-
-        def smooth_gaussian(x):
-            V = 50*np.exp(-(x+7)**2.0/self.a**2.0) + 50*np.exp(-(x-(-7+14))**2.0/self.a**2.0)
-            return V
-
-        if U == 'delta':
-            return delta_potential(x)
-        elif U == 'square':
-            return square_potential(x)
-        elif U == 'smooth_gaussian':
-            return smooth_gaussian(x)
-        else:
-            return no_potential(x)
 
     def set_constants(self, kwargs):
         self.mass = kwargs['mass']
@@ -128,6 +115,8 @@ class Schrodinger(object):
         self.a = kwargs['a']
         self.k0x = kwargs['k0x']
         self.V0 = kwargs['V0']
+        self.vp = kwargs['vp']
+        self.potential_type = kwargs['potential']
         self.Nt = int(round(self.tf / float(self.dt)))
         self.t = np.linspace(self.t0, self.Nt * self.dt, self.Nt)
         self.x = np.linspace(self.x0, self.xf, self.nx + 1)
@@ -135,20 +124,49 @@ class Schrodinger(object):
         self.J = len(self.x)
         self.T = len(self.t)
 
+class Potential:
+
+    def __init__(self, x, V0, a, vp=None, d=None):
+        self.x = x
+        self.V0 = V0
+        self.a = a
+        self.vp = vp
+        self.d = d
+
+    def zero_potential(self):
+        return np.zeros(len(self.x))
+
+    def delta_potential(self):
+        V = np.zeros(len(self.x))
+        if not self.V0:
+            V[int(len(self.x) / 2)] = 1
+        V[int(len(self.x) / 2)] = self.V0
+        return V
+
+    def smooth_gaussian(self):
+        V = self.V0 * np.exp(-(self.x + self.vp) ** 2.0 / self.a ** 2) + self.V0 * \
+            np.exp(-(self.x - self.vp) ** 2.0 / self.a ** 2)
+        return V
+
+    def square_potential(self):
+        return self.x ** 2 / self.V0
+
 args = {'nx': 1000, 
-        'x0': -20, 
-        'xf': 20, 
-        'xa': -3, 
+        'x0': -50, 
+        'xf': 50, 
+        'xa': 4, 
         't0': 0, 
         'tf': 6.0,
         'dt': 0.005, 
-        'a': 1.5, 
-        'k0x': 5,
-        'V0': 50,
+        'a': 0.4, 
+        'k0x': 0,
         'mass': 0.5,
         'hbar': 1,
-        'potential': 'smooth_gaussian'}
-        
+        'potential': 'smooth_gaussian',
+        'V0': 50,
+        'vp': 10,
+        }
+
 schrodinger = Schrodinger(**args)
 psi = schrodinger.solve()
 schrodinger.play_video(psi)
