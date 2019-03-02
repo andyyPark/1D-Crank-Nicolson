@@ -21,7 +21,6 @@ class Schrodinger(object):
         ax[0].set_ylim(0, 1.2)
         ax[0].plot(self.t, self.normalization)
         ax[0].set_title('Normalization')
-        ax[1].set_ylim(-(1.5 + self.xa), 1.5 + self.xa)
         ax[1].plot(self.t, self.averageX)
         ax[1].set_title('Average x')
         ax[2].plot(self.t, self.averageX2)
@@ -49,6 +48,9 @@ class Schrodinger(object):
         ax2.fill_between(self.x, self.V, facecolor = 'C1', alpha =0.2)
         ax1.grid('on')
         plt.draw()
+        if not self.n:
+            self.n = self.T - 1
+
         for n in range(0, self.n):
             line.set_ydata(abs(PSI[:, n]) ** 2)
             plt.pause(0.0001)
@@ -69,10 +71,11 @@ class Schrodinger(object):
             self.normalization[n] = trapz(abs(psi ** 2), self.x, dx=self.dx)
             self.averageX[n] = trapz(self.x * abs(psi ** 2), self.x, dx=self.dx)
             self.averageX2[n] = trapz(self.x ** 2 * abs(psi ** 2), self.x, dx=self.dx)
-            if abs(self.averageX[n] - self.xa) > threshold:
+
+            if self.potential_type == '' and self.k0x == 0 and abs(self.averageX[n] - self.xa) > threshold:
                 self.n = n
                 self.clear_data()
-                break  
+                break 
         return PSI
 
     def clear_data(self):
@@ -117,6 +120,7 @@ class Schrodinger(object):
     def set_constants(self, kwargs):
         self.mass = kwargs['mass']
         self.hbar = kwargs['hbar']
+        self.n = None
 
     def set_coordinate(self, kwargs):
         self.nx = kwargs['nx']
@@ -169,12 +173,12 @@ class Potential:
 args = {'nx': 1000, 
         'x0': -50, 
         'xf': 50, 
-        'xa': 4, 
+        'xa': -3, 
         't0': 0, 
         'tf': 7.0,
         'dt': 0.005, 
         'a': 0.4, 
-        'k0x': 0,
+        'k0x': 2,
         'mass': 0.5,
         'hbar': 1,
         'potential': '',
@@ -182,8 +186,9 @@ args = {'nx': 1000,
         'vp': 10,
         }
 
-schrodinger = Schrodinger(**args)
-psi = schrodinger.solve(threshold=0.0005)
-#schrodinger.play_video(psi)
-schrodinger.plot_graphs()
 
+if __name__ == '__main__':
+    schrodinger = Schrodinger(**args)
+    psi = schrodinger.solve(threshold=0.0005)
+    schrodinger.play_video(psi)
+    schrodinger.plot_graphs()
