@@ -4,6 +4,7 @@ import scipy.sparse.linalg
 from scipy.integrate import trapz
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
+import random
 
 class Schrodinger(object):
 
@@ -15,6 +16,23 @@ class Schrodinger(object):
         self.normalization = np.zeros(self.T)
         self.averageX = np.zeros(self.T)
         self.averageX2 = np.zeros(self.T)
+
+    def velocity(self):
+        if not self.n:
+            self.n = len(self.t) - 1
+        n1 = random.randint(0, self.n)
+        n2 = random.randint(0, self.n)
+        while self.t[n1] >= 5.0 and self.t[n2] >= 5.0:
+            n1 = random.randint(0, self.n)
+            n2 = random.randint(0, self.n)
+            while n2 == n1:
+                n2 = random.randint(0, self.n)
+        v = (self.averageX[n1] - self.averageX[n2]) / (self.t[n1] - self.t[n2])
+        plt.plot(self.t, self.averageX, label='Average X')
+        plt.plot(self.t, v * self.t + self.xa, label='Calculated V')
+        plt.plot(self.t, abs(v * self.t + self.xa - self.averageX), label='Difference')
+        plt.legend(loc='upper left')
+        plt.show()
 
     def plot_graphs(self):
         fig, ax = plt.subplots(1, 3, figsize=(11, 7))
@@ -173,12 +191,12 @@ class Potential:
 args = {'nx': 1000, 
         'x0': -50, 
         'xf': 50, 
-        'xa': -3, 
+        'xa': 3, 
         't0': 0, 
         'tf': 7.0,
         'dt': 0.005, 
         'a': 0.4, 
-        'k0x': 2,
+        'k0x': 3,
         'mass': 0.5,
         'hbar': 1,
         'potential': '',
@@ -190,5 +208,6 @@ args = {'nx': 1000,
 if __name__ == '__main__':
     schrodinger = Schrodinger(**args)
     psi = schrodinger.solve(threshold=0.0005)
-    schrodinger.play_video(psi)
+    #schrodinger.play_video(psi)
     schrodinger.plot_graphs()
+    print(schrodinger.velocity())
