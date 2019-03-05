@@ -37,6 +37,14 @@ class Schrodinger(object):
         plt.savefig('velocity.png')
         plt.show()
 
+    def plot_uncertainty(self):
+        uncertainty = np.sqrt(self.averageX2 - self.averageX ** 2)
+        plt.plot(self.t, uncertainty)
+        plt.xlabel('t')
+        plt.ylabel('Uncertainty')
+        plt.savefig('uncertainty.png')
+        plt.show()
+
     def plot_graphs(self):
         fig, ax = plt.subplots(1, 3, figsize=(11, 7))
         ax[0].set_ylim(0, 1.2)
@@ -194,23 +202,24 @@ class Potential:
 args = {'nx': 1000, 
         'x0': -50, 
         'xf': 50, 
-        'xa': 3, 
+        'xa': 2, 
         't0': 0, 
         'tf': 7.0,
         'dt': 0.005, 
-        'a': 0.4, 
-        'k0x': 3,
+        'a': 1.0, 
+        'k0x': 0,
         'mass': 0.5,
         'hbar': 1,
         'potential': '',
         'V0': 50,
-        'vp': 10,
+        'vp': 15,
         }
 
 
 if __name__ == '__main__':
     schrodinger = Schrodinger(**args)
     psi = schrodinger.solve(threshold=0.0005)
-    schrodinger.play_video(psi)
-    schrodinger.plot_graphs()
-    schrodinger.plot_velocity()
+    #schrodinger.play_video(psi)
+    #schrodinger.plot_graphs()
+    #schrodinger.plot_velocity()
+    schrodinger.plot_uncertainty()
