@@ -17,7 +17,7 @@ class Schrodinger(object):
         self.averageX = np.zeros(self.T)
         self.averageX2 = np.zeros(self.T)
 
-    def velocity(self):
+    def plot_velocity(self):
         if not self.n:
             self.n = len(self.t) - 1
         n1 = random.randint(0, self.n)
@@ -31,7 +31,10 @@ class Schrodinger(object):
         plt.plot(self.t, self.averageX, label='Average X')
         plt.plot(self.t, v * self.t + self.xa, label='Calculated V')
         plt.plot(self.t, abs(v * self.t + self.xa - self.averageX), label='Difference')
+        plt.xlabel('t')
+        plt.ylabel('x')
         plt.legend(loc='upper left')
+        plt.savefig('velocity.png')
         plt.show()
 
     def plot_graphs(self):
@@ -208,6 +211,6 @@ args = {'nx': 1000,
 if __name__ == '__main__':
     schrodinger = Schrodinger(**args)
     psi = schrodinger.solve(threshold=0.0005)
-    #schrodinger.play_video(psi)
+    schrodinger.play_video(psi)
     schrodinger.plot_graphs()
-    print(schrodinger.velocity())
+    schrodinger.plot_velocity()
